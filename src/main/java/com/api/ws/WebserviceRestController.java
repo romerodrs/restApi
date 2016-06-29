@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.bind.annotation.*;
 
 import com.api.ws.entity.Users;
@@ -20,7 +21,7 @@ import com.api.ws.repository.UsersDao;
  * Created by DLRR on 6/14/16.
  */
 @RestController
-@Async
+//@Async
 public class WebserviceRestController {
 
 	@Autowired
@@ -65,6 +66,30 @@ public class WebserviceRestController {
     	return oozieApp.runOozie();
     }
 
-
+    @RequestMapping(value="/createUser/{userName}/{password}", method = RequestMethod.GET, headers="Accept=application/json")
+    public Users createUser(@PathVariable String userName, @PathVariable String password){
+    	Users user = new Users();
+    	user.setUserName(userName);
+    	user.setUserPassword(password);
+    	return usersDao.save(user);
+	}
+    @RequestMapping(value="/deleteUser/{id}", method = RequestMethod.GET, headers="Accept=application/json")
+    public String deleteUser(@PathVariable int id){
+    	usersDao.delete((long)id);
+    	return "user deleted";
+    }
+    
+    @RequestMapping(value="/updateUser/{userName}/{password}", method = RequestMethod.GET, headers="Accept=application/json")
+    public Users updateUser(@PathVariable String userName, @PathVariable String password){
+    	Users user = usersDao.findByuserName(userName);
+    	if(user == null){
+    		user = new Users();
+    	}
+    	user.setUserName(userName);
+		user.setUserPassword(password);
+    	return usersDao.save(user);
+	}
+    
+    
 
 }

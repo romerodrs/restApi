@@ -7,8 +7,14 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.envers.AuditTable;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
+
 @Entity
 @Table(name = "Users")
+@Audited
+@AuditTable("USER_HISTORY")
 public class Users {
 
 	@Id
@@ -18,6 +24,7 @@ public class Users {
 	@Column(name="user_name")
     private String userName;
 	@Column(name="password")
+	@NotAudited
     private String password;
 	
 	public Users(){};

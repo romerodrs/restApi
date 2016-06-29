@@ -6,47 +6,28 @@ import org.apache.oozie.client.OozieClient;
 import org.apache.oozie.client.WorkflowJob;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Component
+@EnableConfigurationProperties
+@ConfigurationProperties(prefix = "oozie")
+@PropertySource("classpath:oozie.properties")
 public class OozieApp {
 
-	@Value("${oozie.client.url}")
 	private String url;
-	
-	@Value("${oozie.client.namenode}")
 	private String namenode;
-	
-	@Value("${oozie.client.jobtracker}")
 	private String jobtracker;
-	
-	@Value("${oozie.client.queuename}")
 	private String queuename;
-	
-	@Value("${oozie.client.libpath}")
 	private String libpath;
-	
-	@Value("${oozie.client.useSystemLibpath}")
 	private String useSystemLibpath;
-	
-	@Value("${oozie.client.wfRerunFailnodes}")
 	private String wfRerunFailnodes;
-	
-	@Value("${oozie.client.projectRoot}")
 	private String projectRoot;
-	
-	@Value("${oozie.client.appPath}")
 	private String appPath;
-	
-	@Value("${oozie.client.oozieclientAppPath}")
 	private String oozieclientAppPath;
-	
-	@Value("${oozie.client.inputdir}")
 	private String inputdir;
-	
-	@Value("${oozie.client.outputdir}")
 	private String outputdir;
-	
 	private  Properties conf;
 	
 	private void setProperties(OozieClient wc) {
@@ -71,7 +52,7 @@ public class OozieApp {
 	        OozieClient wc = new OozieClient(url);
 	        this.setProperties(wc);
 	        try {
-	        	//executionLog.append(conf.toString()).append(" ");
+	        //	executionLog.append(conf.toString()).append(" ");
 	            String jobId = wc.run(conf);
 	            executionLog.append("Workflow job, ").append(jobId).append(" submitted \n");
 	            while (wc.getJobInfo(jobId).getStatus() == WorkflowJob.Status.RUNNING) {
@@ -99,6 +80,110 @@ public class OozieApp {
 				+ ", oozieclientAppPath=" + oozieclientAppPath + ", inputdir="
 				+ inputdir + ", outputdir=" + outputdir + ", conf=" + conf
 				+ "]";
+	}
+
+	public String getUrl() {
+		return url;
+	}
+
+	public String getNamenode() {
+		return namenode;
+	}
+
+	public String getJobtracker() {
+		return jobtracker;
+	}
+
+	public String getQueuename() {
+		return queuename;
+	}
+
+	public String getLibpath() {
+		return libpath;
+	}
+
+	public String getUseSystemLibpath() {
+		return useSystemLibpath;
+	}
+
+	public String getWfRerunFailnodes() {
+		return wfRerunFailnodes;
+	}
+
+	public String getProjectRoot() {
+		return projectRoot;
+	}
+
+	public String getAppPath() {
+		return appPath;
+	}
+
+	public String getOozieclientAppPath() {
+		return oozieclientAppPath;
+	}
+
+	public String getInputdir() {
+		return inputdir;
+	}
+
+	public String getOutputdir() {
+		return outputdir;
+	}
+
+	public Properties getConf() {
+		return conf;
+	}
+
+	public void setUrl(String url) {
+		this.url = url;
+	}
+
+	public void setNamenode(String namenode) {
+		this.namenode = namenode;
+	}
+
+	public void setJobtracker(String jobtracker) {
+		this.jobtracker = jobtracker;
+	}
+
+	public void setQueuename(String queuename) {
+		this.queuename = queuename;
+	}
+
+	public void setLibpath(String libpath) {
+		this.libpath = libpath;
+	}
+
+	public void setUseSystemLibpath(String useSystemLibpath) {
+		this.useSystemLibpath = useSystemLibpath;
+	}
+
+	public void setWfRerunFailnodes(String wfRerunFailnodes) {
+		this.wfRerunFailnodes = wfRerunFailnodes;
+	}
+
+	public void setProjectRoot(String projectRoot) {
+		this.projectRoot = projectRoot;
+	}
+
+	public void setAppPath(String appPath) {
+		this.appPath = appPath;
+	}
+
+	public void setOozieclientAppPath(String oozieclientAppPath) {
+		this.oozieclientAppPath = oozieclientAppPath;
+	}
+
+	public void setInputdir(String inputdir) {
+		this.inputdir = inputdir;
+	}
+
+	public void setOutputdir(String outputdir) {
+		this.outputdir = outputdir;
+	}
+
+	public void setConf(Properties conf) {
+		this.conf = conf;
 	}
 
 	
