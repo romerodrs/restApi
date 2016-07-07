@@ -2,19 +2,21 @@ package com.api.ws.oozie;
 
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
 import org.apache.oozie.client.OozieClient;
-import org.apache.oozie.client.WorkflowJob;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
-@Component
+import com.api.ws.oozie.job.OozieJob;
+
+@Service
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "oozie")
 @PropertySource("classpath:oozie.properties")
-public class OozieApp {
+public class OozieServiceImpl implements OozieService{
 
 	private String url;
 	private String namenode;
@@ -28,47 +30,34 @@ public class OozieApp {
 	private String oozieclientAppPath;
 	private String inputdir;
 	private String outputdir;
-	private  Properties conf;
+	private  Properties properties;
 	
-	private void setProperties(OozieClient wc) {
-		conf = wc.createConfiguration();
-        conf.setProperty("nameNode", namenode);
-        conf.setProperty("jobTracker", jobtracker);
-        conf.setProperty("queueName", queuename);
-        conf.setProperty("oozie.libpath", libpath);
-        conf.setProperty("oozie.use.system.libpath", useSystemLibpath);
-        conf.setProperty("oozie.wf.rerun.failnodes", wfRerunFailnodes);
-        conf.setProperty("oozieProjectRoot", projectRoot);
-        conf.setProperty("appPath", appPath);
-        
-        conf.setProperty(OozieClient.APP_PATH, oozieclientAppPath);
-        conf.setProperty("inputDir", inputdir );
-        conf.setProperty("outputDir", outputdir);
-	}
+	private static Logger logger = Logger.getLogger(OozieServiceImpl.class);
 	
-    public String runOozie() {
-    	StringBuffer executionLog = new StringBuffer("--- start log ---- \n");	
-    	try{
-	        OozieClient wc = new OozieClient(url);
-	        this.setProperties(wc);
-	        try {
-	        //	executionLog.append(conf.toString()).append(" ");
-	            String jobId = wc.run(conf);
-	            executionLog.append("Workflow job, ").append(jobId).append(" submitted \n");
-	            while (wc.getJobInfo(jobId).getStatus() == WorkflowJob.Status.RUNNING) {
-	            	executionLog.append("Workflow job running ... \n");
-	            }
-	            executionLog.append("Workflow job completed ... \n" );
-	            executionLog.append(wc.getJobInfo(jobId));
-	        } catch (Exception e) {
-	        	executionLog.append("Errors :").append(e.getLocalizedMessage());
-	        }
-	    }catch(Exception e){
-	    	executionLog.append(this.toString()).append(" " + e.getLocalizedMessage());
-	    }
-        executionLog.append(" \n -- end log --");
-        return executionLog.toString();
+    @Override
+    @Async
+    public OozieJob executeOozieJob()  {
+    	logger.info("[Webservice Ozzie] Starting Job execution...");
+        OozieClient oozieClient = new OozieClient(url);
+        this.setProperties(oozieClient);
+        logger.debug("[Webservice Ozzie] " + properties.toString());
+        OozieJob oozieJob = new OozieJob(this, oozieClient);
+        return oozieJob;
     }
+		public void setProperties(OozieClient wc) {
+		properties = wc.createConfiguration();
+        properties.setProperty("nameNode", namenode);
+        properties.setProperty("jobTracker", jobtracker);
+        properties.setProperty("queueName", queuename);
+        properties.setProperty("oozie.libpath", libpath);
+        properties.setProperty("oozie.use.system.libpath", useSystemLibpath);
+        properties.setProperty("oozie.wf.rerun.failnodes", wfRerunFailnodes);
+        properties.setProperty("oozieProjectRoot", projectRoot);
+        properties.setProperty("appPath", appPath);
+        properties.setProperty(OozieClient.APP_PATH, oozieclientAppPath);
+        properties.setProperty("inputDir", inputdir );
+        properties.setProperty("outputDir", outputdir);
+	}
 
 	@Override
 	public String toString() {
@@ -78,7 +67,7 @@ public class OozieApp {
 				+ useSystemLibpath + ", wfRerunFailnodes=" + wfRerunFailnodes
 				+ ", projectRoot=" + projectRoot + ", appPath=" + appPath
 				+ ", oozieclientAppPath=" + oozieclientAppPath + ", inputdir="
-				+ inputdir + ", outputdir=" + outputdir + ", conf=" + conf
+				+ inputdir + ", outputdir=" + outputdir + ", conf=" + properties
 				+ "]";
 	}
 
@@ -130,10 +119,6 @@ public class OozieApp {
 		return outputdir;
 	}
 
-	public Properties getConf() {
-		return conf;
-	}
-
 	public void setUrl(String url) {
 		this.url = url;
 	}
@@ -182,8 +167,13 @@ public class OozieApp {
 		this.outputdir = outputdir;
 	}
 
-	public void setConf(Properties conf) {
-		this.conf = conf;
+	public void setProperties(Properties prop) {
+		this.properties = prop;
+	}
+
+	@Override
+	public Properties getProperties() {
+		return properties;
 	}
 
 	

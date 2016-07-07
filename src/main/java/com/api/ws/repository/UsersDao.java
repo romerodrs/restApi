@@ -10,7 +10,7 @@ import com.api.ws.entity.Users;
 @Transactional
 public interface UsersDao extends CrudRepository<Users, Long> {
 	
-	public Users findByuserId(int userId);
+	public Users findByuserId(long userId);
 	public Users findByuserName(String userName);
 	public List<Users> findAll();
 

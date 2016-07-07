@@ -9,32 +9,30 @@ import javax.persistence.Table;
 
 import org.hibernate.envers.AuditTable;
 import org.hibernate.envers.Audited;
-import org.hibernate.envers.NotAudited;
 
 @Entity
 @Table(name = "Users")
 @Audited
-@AuditTable("USER_HISTORY")
+@AuditTable("Users_hist")
 public class Users {
 
 	@Id
     @GeneratedValue(strategy=GenerationType.AUTO)
 	@Column(name="user_id")
-    private int userId;
+    private long userId;
 	@Column(name="user_name")
     private String userName;
 	@Column(name="password")
-	@NotAudited
     private String password;
 	
 	public Users(){};
 	
-    public Users(int id, String userName, String pasword){
+    public Users(long id, String userName, String pasword){
     	this.userId = id;
     	this.userName = userName;
     	this.password = pasword;
     }
-    public int getUserId() {
+    public long getUserId() {
 		return userId;
 	}
 	public String getUserName() {
@@ -43,7 +41,7 @@ public class Users {
 	public String getUserPassword() {
 		return password;
 	}
-	public void setUserId(int userId) {
+	public void setUserId(long userId) {
 		this.userId = userId;
 	}
 	public void setUserName(String userName) {
