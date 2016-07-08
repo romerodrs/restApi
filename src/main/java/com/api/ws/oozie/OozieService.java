@@ -1,7 +1,9 @@
 package com.api.ws.oozie;
 
 import org.apache.oozie.client.OozieClientException;
-
+/**
+ * Created by DLRR
+ */
 public interface OozieService {
 	public static String statusRUNNING = "RUNNING";
 	public static String statusSUCCEDED = "SUCCEEDED";

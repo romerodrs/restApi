@@ -6,7 +6,9 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.api.ws.entity.Users;
-
+/**
+ * Created by DLRR
+ */
 @Transactional
 public interface UsersDao extends CrudRepository<Users, Long> {
 	

@@ -20,7 +20,7 @@ import com.api.ws.oozie.OozieService;
 import com.api.ws.repository.UsersDao;
 
 /**
- * Created by DLRR on 6/14/16.
+ * Created by DLRR
  */
 @RestController
 public class WebserviceRestController {
@@ -87,7 +87,6 @@ public class WebserviceRestController {
             	http = HttpStatus.OK;
             }
         } catch (Exception e) {
-        	// error, return errorObject
         	logger.info("[Webservice Call] Error getting Oozie Job {"+ jobId +"}: " + e.getLocalizedMessage());
         	http = HttpStatus.INTERNAL_SERVER_ERROR;
         }

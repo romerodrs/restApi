@@ -8,7 +8,9 @@ import org.codehaus.jackson.annotate.JsonProperty;
 
 import com.api.ws.oozie.OozieServiceImpl;
 
-
+/**
+ * Created by DLRR
+ */
 public class OozieJob {
 	
 	@JsonProperty("oozieJobId")

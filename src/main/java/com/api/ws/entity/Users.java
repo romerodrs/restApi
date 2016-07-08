@@ -10,6 +10,9 @@ import javax.persistence.Table;
 import org.hibernate.envers.AuditTable;
 import org.hibernate.envers.Audited;
 
+/**
+ * Created by DLRR
+ */
 @Entity
 @Table(name = "Users")
 @Audited
