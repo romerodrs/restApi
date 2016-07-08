@@ -4,13 +4,11 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.apache.oozie.client.OozieClient;
+import org.apache.oozie.client.OozieClientException;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import com.api.ws.oozie.job.OozieJob;
 
 @Service
 @EnableConfigurationProperties
@@ -30,21 +28,29 @@ public class OozieServiceImpl implements OozieService{
 	private String oozieclientAppPath;
 	private String inputdir;
 	private String outputdir;
-	private  Properties properties;
+	private Properties properties;
 	
 	private static Logger logger = Logger.getLogger(OozieServiceImpl.class);
 	
     @Override
-    @Async
-    public OozieJob executeOozieJob()  {
+    public String executeOozieJob() throws OozieClientException  {
     	logger.info("[Webservice Ozzie] Starting Job execution...");
         OozieClient oozieClient = new OozieClient(url);
         this.setProperties(oozieClient);
         logger.debug("[Webservice Ozzie] " + properties.toString());
-        OozieJob oozieJob = new OozieJob(this, oozieClient);
-        return oozieJob;
+        return oozieClient.run(properties);
     }
-		public void setProperties(OozieClient wc) {
+    
+    @Override
+    public String oozieJobStatus(String jobId) throws OozieClientException{
+    	logger.info("[Webservice Ozzie] Checking Job {"+ jobId +"} status...");
+    	OozieClient oozieClient = new OozieClient(url);
+    	this.setProperties(oozieClient);
+    	logger.debug("[Webservice Ozzie] " + properties.toString());
+    	return oozieClient.getStatus(jobId);
+    }
+    
+	private void setProperties(OozieClient wc) {
 		properties = wc.createConfiguration();
         properties.setProperty("nameNode", namenode);
         properties.setProperty("jobTracker", jobtracker);
@@ -167,11 +173,6 @@ public class OozieServiceImpl implements OozieService{
 		this.outputdir = outputdir;
 	}
 
-	public void setProperties(Properties prop) {
-		this.properties = prop;
-	}
-
-	@Override
 	public Properties getProperties() {
 		return properties;
 	}

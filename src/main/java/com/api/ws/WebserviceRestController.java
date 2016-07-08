@@ -6,17 +6,17 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import com.api.ws.entity.Users;
 import com.api.ws.oozie.OozieService;
-import com.api.ws.oozie.job.OozieJob;
 import com.api.ws.repository.UsersDao;
 
 /**
@@ -33,56 +33,68 @@ public class WebserviceRestController {
 	@Autowired
 	private OozieService oozieService;
 	
-	private HashMap<String, OozieJob> oozieJobStatusMap = new HashMap<String, OozieJob>();
-	
 	@RequestMapping(value="/oozie", method = RequestMethod.GET, headers="Accept=application/json")
-	@ResponseStatus(value = HttpStatus.ACCEPTED)
-	public String oozieExec(){
+	@ResponseBody
+    @ApiOperation(value = "oozie", nickname = "execute oozie job")
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Created"),
+            @ApiResponse(code = 204, message = "No content"),
+            @ApiResponse(code = 403, message = "Forbidden"),
+            @ApiResponse(code = 500, message = "Failure")})
+	public DeferredResult<ResponseEntity<?>> oozieExec(){
 		logger.info("[Webservice Call] Calling oozie ...");
-		OozieJob oozieJob = null;
+		HttpStatus httpStatus = HttpStatus.NO_CONTENT;
+		String returnMessage = "NO_CONTENT";
 		try {
-			oozieJob =  oozieService.executeOozieJob();
-			oozieJobStatusMap.put(oozieJob.getOozieJobId(), oozieJob);
-			
+			String jobId = oozieService.executeOozieJob();
+			returnMessage = "Please, check if your job is running using /getOozieJobStatus/"+jobId;
+			httpStatus = HttpStatus.CREATED;   
 		} catch (Exception e) {
 			logger.info("[Webservice Call] Error calling Oozie: " + e.getLocalizedMessage());
+			returnMessage ="Error calling Oozie: " + e.getLocalizedMessage();
+			httpStatus =HttpStatus.INTERNAL_SERVER_ERROR; 
 		}
 		logger.info("[Webservice Call] End oozie call!");
-		return "Please, check if your job is running using /getOozieJobStatus/"+oozieJob.getOozieJobId();
+		DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<ResponseEntity<?>>();
+		ResponseEntity<String> responseEntity = new ResponseEntity<String>(returnMessage, httpStatus);
+		deferredResult.setResult(responseEntity);
+		return deferredResult;
     }
     
     
-    @RequestMapping("/getOozieJobStatus/{jobId}")
-    @ApiOperation(value = "getOozieJobStatus", nickname = "getOozieJobStatus")
+    @RequestMapping(value="/getOozieJobStatus/{jobId}", method = RequestMethod.GET, headers="Accept=application/json")
+	@ResponseBody
+    @ApiOperation(value = "getOozieJobStatus", nickname = "get oozie job status")
     @ApiImplicitParams({
         @ApiImplicitParam(name = "jobId", value = "Job id", required = true, dataType = "String", paramType="path")
     })
-    public String getOozieJobStatus(@PathVariable String jobId){
+    @ApiResponses(value = {
+    		@ApiResponse(code = 100, message = "Continue"),
+            @ApiResponse(code = 200, message = "Success"),
+            @ApiResponse(code = 204, message = "No content"),
+            @ApiResponse(code = 403, message = "Forbidden"),
+            @ApiResponse(code = 500, message = "Failure")})
+    public DeferredResult<ResponseEntity<?>> getOozieJobStatus(@PathVariable String jobId){
     	logger.info("[Webservice Call] Oozie Job " + jobId  + " status ");
-        String result = "Job not found";
+        HttpStatus http = HttpStatus.NO_CONTENT;
+        String oozieJobStatus = "NO_CONTENT";
         try {
-            if (oozieJobStatusMap.get(jobId).getStatus() == OozieJob.statusRUNNING ) {                                                         
-                // future ended, get and return the result
-            	logger.info("[Webservice Call] Oozie Job " + oozieJobStatusMap.get(jobId).getOozieJobId() + " Done");
-            	oozieJobStatusMap.get(jobId).setStatus(OozieJob.statusSUCCEDED);
-            	result = "Oozie Job " + oozieJobStatusMap.get(jobId).getOozieJobId() + "Done";
-            } else {
-            	logger.info("[Webservice Call] Oozie Job " + oozieJobStatusMap.get(jobId).getOozieJobId() + "already PROCESING ");
-            	oozieJobStatusMap.get(jobId).setStatus(OozieJob.statusRUNNING);
-            	result = "Oozie Job " + oozieJobStatusMap.get(jobId).getOozieJobId() + "already PROCESING";
+        	oozieJobStatus = oozieService.oozieJobStatus(jobId);
+        	logger.info("[OOZIE JOB STATUS]" + oozieJobStatus);
+            if (oozieJobStatus.equals(OozieService.statusRUNNING)) {                                                         
+            	http = HttpStatus.CONTINUE;
+            }else{
+            	http = HttpStatus.OK;
             }
         } catch (Exception e) {
-            // error, return errorObject
+        	// error, return errorObject
         	logger.info("[Webservice Call] Error getting Oozie Job {"+ jobId +"}: " + e.getLocalizedMessage());
-        	result  = "Error getting Oozie Job {"+ jobId +"}: " + e.getLocalizedMessage();
-        	try{
-        		oozieJobStatusMap.get(jobId).setStatus(OozieJob.statusKILLED);
-        	}catch(Exception ex){
-        		logger.info("[Webservice Call] Error getting Oozie Job {"+ jobId +"}: " + e.getLocalizedMessage());
-        		result  = "Error getting Oozie Job {"+ jobId +"}: " + e.getLocalizedMessage();
-        	}
+        	http = HttpStatus.INTERNAL_SERVER_ERROR;
         }
-        return result;
+        DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<ResponseEntity<?>>();
+    	ResponseEntity<String> responseEntity = new ResponseEntity<String>(" Oozie Job status is" + oozieJobStatus, http);
+    	deferredResult.setResult(responseEntity);
+        return deferredResult;
     }
     
 	@RequestMapping(value="/users", method = RequestMethod.GET, headers="Accept=application/json")
@@ -93,13 +105,18 @@ public class WebserviceRestController {
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Failure")})
-	public List<Users> getAll(){
+	public DeferredResult<ResponseEntity<?>> getAll(){
 		logger.info("[Webservice Call] Get all users ...");
-		return usersDao.findAll();
+		DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<ResponseEntity<?>>();
+		ResponseEntity<List<Users>> responseEntity  = new ResponseEntity<List<Users>>(usersDao.findAll(), HttpStatus.OK);    
+		deferredResult.setResult(responseEntity);
+		return deferredResult;
+//		return usersDao.findAll();
 	}
 
 	@RequestMapping(value="/users/{id}", method = RequestMethod.GET, headers="Accept=application/json")
 	@ResponseBody
+	@ResponseStatus(HttpStatus.OK)
     @ApiOperation(value = "findByuserId", nickname = "getById")
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "User's id", required = true, dataType = "int", paramType="path")
@@ -110,10 +127,14 @@ public class WebserviceRestController {
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Failure")})
-	public Users getById(@PathVariable long id){
+	public DeferredResult<ResponseEntity<?>> getById(@PathVariable long id){
 		logger.info("[Webservice Call] Get users by id { "+ id + "} ..." );
 		// controlar id null
-		return usersDao.findByuserId(id);
+		DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<ResponseEntity<?>>();
+		ResponseEntity<Users> responseEntity  = new ResponseEntity<Users>(usersDao.findByuserId(id), HttpStatus.OK);    
+		deferredResult.setResult(responseEntity);
+		return deferredResult;
+//		return usersDao.findByuserId(id);
 	}
 	
     @RequestMapping(value="/createUser/{userName}/{password}", method = RequestMethod.GET, headers="Accept=application/json")
@@ -129,13 +150,18 @@ public class WebserviceRestController {
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Failure")})
-    public Users createUser(@PathVariable String userName, @PathVariable String password){
+    public DeferredResult<ResponseEntity<?>> createUser(@PathVariable String userName, @PathVariable String password){
     	logger.info("[Webservice Call] Creating new user { "+ userName +" } { "+ password +" }...");
     	Users user = new Users(); 
     	// controlar username y/o password null
     	user.setUserName(userName);
     	user.setUserPassword(password);
-    	return usersDao.save(user);
+//    	return usersDao.save(user);
+    	DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<ResponseEntity<?>>();
+		ResponseEntity<Users> responseEntity  = new ResponseEntity<Users>(usersDao.save(user), HttpStatus.OK);    
+		deferredResult.setResult(responseEntity);
+		return deferredResult;
+    	
 	}
 	
     @RequestMapping(value="/deleteUser/{id}", method = RequestMethod.GET, headers="Accept=application/json")
@@ -149,10 +175,14 @@ public class WebserviceRestController {
             @ApiResponse(code = 200, message = "Success"),
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 500, message = "Failure")})
-    public void deleteUser(@PathVariable long id){
+    public DeferredResult<ResponseEntity<?>> deleteUser(@PathVariable long id){
     	logger.info("[Webservice Call] Deleting user with id { "+ id +" } ...");
     	usersDao.delete(id);
     	logger.info("[Webservice Call] User deleted!");
+    	DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<ResponseEntity<?>>();
+		ResponseEntity<String> responseEntity  = new ResponseEntity<String>("User deleted!", HttpStatus.OK);    
+		deferredResult.setResult(responseEntity);
+		return deferredResult;
     }
 
     @RequestMapping(value="/updateUser/{id}/{userName}/{password}", method = RequestMethod.GET, headers="Accept=application/json")
@@ -170,7 +200,7 @@ public class WebserviceRestController {
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Failure")})
-    public void updateUser(@PathVariable long id, @PathVariable String userName, @PathVariable String password){
+    public DeferredResult<ResponseEntity<?>> updateUser(@PathVariable long id, @PathVariable String userName, @PathVariable String password){
     	logger.info("[Webservice Call] Updating user { "+ id +" } { "+ userName +" } { "+ password +" }...");
     	Users user = usersDao.findByuserId(id);
     	if (user != null){
@@ -178,6 +208,10 @@ public class WebserviceRestController {
     		user.setUserPassword(password);
     	}
     	logger.info("[Webservice Call] User updated!");
+    	DeferredResult<ResponseEntity<?>> deferredResult = new DeferredResult<ResponseEntity<?>>();
+		ResponseEntity<String> responseEntity  = new ResponseEntity<String>("User updated!", HttpStatus.OK);    
+		deferredResult.setResult(responseEntity);
+		return deferredResult;
 	}
     
 }

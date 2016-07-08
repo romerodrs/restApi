@@ -1,12 +1,14 @@
 package com.api.ws.oozie;
 
-import java.util.Properties;
-
-
-import com.api.ws.oozie.job.OozieJob;
+import org.apache.oozie.client.OozieClientException;
 
 public interface OozieService {
-	public OozieJob executeOozieJob();
-	//public void executeOozieJob(OozieJob oozieJob);
-	public Properties getProperties();
+	public static String statusRUNNING = "RUNNING";
+	public static String statusSUCCEDED = "SUCCEEDED";
+	public static String statusKILLED = "KILLED";
+	public static String statusFAILED = "FAILED";
+	public static String statusPREP = "PREP";
+	
+	public String executeOozieJob() throws OozieClientException;
+	public String oozieJobStatus(String jobId) throws OozieClientException;
 }

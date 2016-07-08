@@ -1,11 +1,14 @@
 package com.api.ws;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.web.client.AsyncRestTemplate;
 
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.PathSelectors;
@@ -18,6 +21,8 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @SpringBootApplication
 @EnableSwagger2
 @ComponentScan
+@EnableAutoConfiguration
+@EnableAsync
 public class WebserviceMainClass extends SpringBootServletInitializer{
 
 	public static void main(String[] args) {
@@ -29,6 +34,11 @@ public class WebserviceMainClass extends SpringBootServletInitializer{
 		return application.sources(WebserviceMainClass.class);
 	}
 
+    @Bean
+    AsyncRestTemplate asyncRestTemplate() {
+        return new AsyncRestTemplate();
+    }
+	
 	@Bean
 	public Docket userAPI() {
 		return new Docket(DocumentationType.SWAGGER_2)
