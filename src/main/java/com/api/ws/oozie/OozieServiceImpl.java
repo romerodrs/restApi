@@ -1,14 +1,24 @@
 package com.api.ws.oozie;
 
 import java.util.Properties;
+import java.util.concurrent.Future;
 
 import org.apache.log4j.Logger;
 import org.apache.oozie.client.OozieClient;
 import org.apache.oozie.client.OozieClientException;
+import org.apache.oozie.client.WorkflowJob;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
+
+import com.api.ws.entity.OozieJobEntity;
+import com.api.ws.oozie.job.OozieJob;
+import com.api.ws.repository.OozieJobDao;
+
 /**
  * Created by DLRR
  */
@@ -32,15 +42,44 @@ public class OozieServiceImpl implements OozieService{
 	private String outputdir;
 	private Properties properties;
 	
+	@Autowired
+	private OozieJobDao oozieJobDao;
+	
 	private static Logger logger = Logger.getLogger(OozieServiceImpl.class);
 	
     @Override
-    public String executeOozieJob() throws OozieClientException  {
+    public OozieJob executeOozieJob() throws OozieClientException  {
+    	OozieJob oozieJob = new OozieJob();
     	logger.info("[Webservice Ozzie] Starting Job execution...");
         OozieClient oozieClient = new OozieClient(url);
         this.setProperties(oozieClient);
         logger.debug("[Webservice Ozzie] " + properties.toString());
-        return oozieClient.run(properties);
+        oozieJob.setOozieJobId(oozieClient.run(properties));
+        oozieJob.setOozieClient(oozieClient);
+        OozieJobEntity oozieJobEntity = new OozieJobEntity();
+        oozieJobEntity.setOozieJobId(oozieJob.getOozieJobId());
+        oozieJobEntity.setJobStatus("APPROVING");
+        oozieJobDao.save(oozieJobEntity);
+        return oozieJob;
+    }
+    
+    @Async
+    @Override
+    public Future<String> updateOozieJobStatus(OozieJob oozieJob) throws OozieClientException, InterruptedException{
+    	OozieJobEntity oozieJobEntity = oozieJobDao.findByoozieJobId(oozieJob.getOozieJobId());
+    	while(oozieJob.getOozieClient().getJobInfo(oozieJob.getOozieJobId()).getStatus() == WorkflowJob.Status.RUNNING){
+    		Thread.sleep(2000);
+    		logger.info("..running..");
+    	}
+    	if(oozieJob.getOozieClient().getJobInfo(oozieJob.getOozieJobId()).getStatus() == WorkflowJob.Status.SUCCEEDED){
+    		oozieJobEntity.setJobStatus("APPROVED");
+    	}else if(oozieJob.getOozieClient().getJobInfo(oozieJob.getOozieJobId()).getStatus() == WorkflowJob.Status.KILLED){
+    		oozieJobEntity.setJobStatus("FAILED");
+    	}else{
+    		oozieJobEntity.setJobStatus("OTHER");
+    	}
+    	oozieJobDao.save(oozieJobEntity);
+    	return new AsyncResult<String>("update end");
     }
     
     @Override
