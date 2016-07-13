@@ -16,7 +16,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         auth.inMemoryAuthentication().withUser("cloudera").password("1234").roles("USER_ADMIN");
-        auth.inMemoryAuthentication().withUser("user").password("1234").roles("USER_BASIC");
         auth.inMemoryAuthentication().withUser("oozie").password("1234").roles("USER_OOZIE");
     }
   
@@ -24,11 +23,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
       http.authorizeRequests()
       	.antMatchers("/").hasRole("USER_ADMIN")
-        .antMatchers("/oozie").access("hasRole('USER_ADMIN') or hasRole('USER_OOZIE')")
-        .antMatchers("/users/**").access("hasRole('USER_ADMIN') or hasRole('USER_BASIC')")
-        .antMatchers("/createUser/**").access("hasRole('USER_ADMIN') or hasRole('USER_BASIC')")
-        .antMatchers("/deleteUser/**").hasRole("USER_ADMIN")
-        .antMatchers("/updateUser/**").hasRole("USER_ADMIN")
+        .antMatchers("/oozie").hasRole("USER_ADMIN")
+        .antMatchers("/getOozieJobStatus/**").access("hasRole('USER_ADMIN') or hasRole('USER_OOZIE')")
         .anyRequest().authenticated() 
         .and().formLogin();
     }
