@@ -49,19 +49,35 @@ public class OozieServiceImpl implements OozieService{
 	
     @Override
     public OozieJob executeOozieJob() throws OozieClientException  {
-    	OozieJob oozieJob = new OozieJob();
     	logger.info("[Webservice Ozzie] Starting Job execution...");
         OozieClient oozieClient = new OozieClient(url);
         this.setProperties(oozieClient);
         logger.debug("[Webservice Ozzie] " + properties.toString());
-        oozieJob.setOozieJobId(oozieClient.run(properties));
+        return runOozieJob(oozieClient);
+    }
+    
+    @Override
+    public OozieJob executeOozieJob(String param) throws OozieClientException  {
+    	logger.info("[Webservice Ozzie] Starting Job execution...");
+        OozieClient oozieClient = new OozieClient(url);
+        this.setProperties(oozieClient);
+        this.properties.setProperty("param", param);
+        logger.info("[Webservice Ozzie] " + properties.toString());
+        return runOozieJob(oozieClient);
+    }
+
+
+	private OozieJob runOozieJob( OozieClient oozieClient) throws OozieClientException {
+		OozieJob oozieJob = new OozieJob();
+		oozieJob.setOozieJobId(oozieClient.run(properties));
         oozieJob.setOozieClient(oozieClient);
         OozieJobEntity oozieJobEntity = new OozieJobEntity();
         oozieJobEntity.setOozieJobId(oozieJob.getOozieJobId());
         oozieJobEntity.setJobStatus("APPROVING");
         oozieJobDao.save(oozieJobEntity);
         return oozieJob;
-    }
+	}
+    
     
     @Async
     @Override

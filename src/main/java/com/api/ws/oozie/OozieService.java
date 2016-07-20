@@ -16,6 +16,7 @@ public interface OozieService {
 	public static String statusPREP = "PREP";
 	
 	public OozieJob executeOozieJob() throws OozieClientException;
+	public OozieJob executeOozieJob(String param) throws OozieClientException;
 	public String oozieJobStatus(String jobId) throws OozieClientException;
 	public Future<String> updateOozieJobStatus(OozieJob oozieJob)throws OozieClientException, InterruptedException; 
 }
