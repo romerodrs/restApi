@@ -1,10 +1,7 @@
 package com.api.ws.oozie.job;
 
-
-import org.apache.log4j.Logger;
 import org.apache.oozie.client.OozieClient;
 //import org.codehaus.jackson.annotate.JsonProperty;
-
 
 /**
  * Created by DLRR
@@ -15,10 +12,7 @@ public class OozieJob {
 	private String oozieJobId;
 	//@JsonProperty("status")
 	private OozieClient oozieClient;
-	
 
-	private static Logger logger = Logger.getLogger(OozieJob.class);
-	
 	public String getOozieJobId() {
 		return oozieJobId;
 	}
